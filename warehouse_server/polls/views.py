@@ -7,6 +7,9 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework import generics
+from rest_framework import mixins
 # Create your views here.
 # Functions based api views
 
@@ -129,3 +132,66 @@ def getOneMemant_rest(request, pk):
     elif request.method == "DELETE":
         memant.delete()
         return Response(status=status.HTTP_200_OK, content="done")
+
+
+# class based api views
+
+class MemantView(APIView):
+    def get(self, request):
+        memants = Memant.objects.all()
+        serialize = MemantSerializer(memants, many=True)
+        return Response(serialize.data)
+
+    def post(self, request):
+        memant = MemantSerializer(data=request.data)
+        if memant.is_valid():
+            memant.save()
+            return Response(memant.data, status=status.HTTP_201_CREATED)
+
+        return Response(memant.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MemantDetails(APIView):
+    def get_object(self, id):
+        try:
+            return Memant.objects.get(id=id)
+
+        except:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def get(self, request, id):
+        memant = self.get_object(id)
+        serialize = MemantSerializer(memant)
+        return Response(serialize.data)
+
+    def put(self, request, id):
+        memant = self.get_object(id)
+        serialize = MemantSerializer(memant, data=request.data)
+        if serialize.is_valid():
+            serialize.save()
+            return Response(serialize.data, status=status.HTTP_201_CREATED)
+
+        return Response(serialize.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, id,):
+        memant = self.get_object(id)
+        memant.delete()
+        return Response(status=status.HTTP_200_OK)
+
+
+class GenericaView(generics.GenericAPIView, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.RetrieveModelMixin):
+    serializer_class = MemantSerializer
+    queryset = Memant.objects.all()
+    lookup_field = 'id'  # unique id to lookup with by default its pk
+
+    def get(self, request, id=None):
+        if id:
+            return self.retrieve(id)
+        else:
+            return self.list(request)
+
+    def post(self, request):
+        return self.create(request)
+
+    def put(self, request, id=None):
+        return self.update(request, id)

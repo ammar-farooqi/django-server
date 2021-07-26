@@ -33,4 +33,4 @@ class Memant(models.Model):
         blank=False, null=False, default="nonone@none.com")
 
     def __str__(self):
-        return self.heiza
+        return self.heiza_text
